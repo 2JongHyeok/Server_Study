@@ -3,34 +3,35 @@
 #include "CorePch.h"
 #include <thread>
 #include <atomic>
+#include <mutex>
 
-atomic <int32> sum = 0;
+// [1][2][3][][][][][][][][][][][]
+vector<int32> v;
 
-void Add()
+// Mutal Exclusive ( 상호베타적 )
+mutex m;
+
+void Push()
 {
-	for (int32 i = 0; i < 1'000'000; ++i)
+	for (int32 i = 0; i < 10000; ++i)
 	{
-		sum++;
-	}
-}
+		// 자물쇠 잠그기
+		m.lock();
 
-void Sub()
-{
-	for (int32 i = 0; i < 1'000'000; ++i)
-	{
-		sum--;
+		v.push_back(i);
+		
+		// 자물쇠 풀기
+		m.unlock();
 	}
 }
 
 int main()
 {
-	Add();
-	Sub();
-	cout << sum << endl;
+	std::thread t1(Push);
+	std::thread t2(Push);
 
-	std::thread t1(Add);
-	std::thread t2(Sub);
 	t1.join();
 	t2.join();
-	cout << sum << endl;
+
+	cout << v.size() << endl;
 }
