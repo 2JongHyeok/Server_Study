@@ -9,21 +9,24 @@ void HelloThread()
     cout << "Hello Thread" << endl;
 }
 
+void HelloThread_2(int32 num)
+{
+    cout << num << endl;
+}
 int main()
 {
-    std::thread t;
-    
-    auto id1 = t.get_id();
+    vector<std::thread> v;
 
-    t = std::thread(HelloThread);
+    for (int32 i = 0; i < 10; ++i)
+    {
+        v.push_back(std::thread(HelloThread_2, i));
+    }
 
-    
-    int32 count = t.hardware_concurrency();   // CPU 코어 개수를 추출하는 함수
-    
-    auto id2 = t.get_id();     // 쓰레드마다 주어지는 id 확인
-    
-    if (t.joinable())   // t 객체가 살아있는지 아닌지 확인하기 위한 코드
-        t.join();   // main 쓰레드가 t쓰레드가 끝날때 까지 기다려주는 코드
+    for (int32 i = 0; i < 10; ++i)
+    {
+        if (v[i].joinable())
+            v[i].join();
+    }
 
     cout << "Hello Main" << endl;
 }
