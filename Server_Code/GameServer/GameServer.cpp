@@ -35,7 +35,8 @@ void Push()
 	for (int32 i = 0; i < 10000; ++i)
 	{
 		// 자물쇠 잠그기
-		LockGuard<std::mutex> lockGuard(m);
+		std::lock_guard<std::mutex> lockGuard(m);
+		//LockGuard<std::mutex> lockGuard(m);
 		//m.lock();
 
 		v.push_back(i);
