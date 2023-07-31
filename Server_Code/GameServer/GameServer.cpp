@@ -4,60 +4,32 @@
 #include <thread>
 #include <atomic>
 #include <mutex>
+#include "AccountManager.h"
+#include "UserManager.h"
 
-// [1][2][3][][][][][][][][][][][]
-vector<int32> v;
-
-// Mutal Exclusive ( 상호베타적 )
-mutex m;
-
-// RAII ( Resource Acquisition is Initialization )
-template<typename T>
-class LockGuard
+void Func1()
 {
-public:
-	LockGuard(T& m)
+	for (int32 i = 0; i < 100; ++i)
 	{
-		_mutex = &m;
-		_mutex->lock();
+		UserManager::instance()->ProcessSave();
 	}
+}
 
-	~LockGuard()
-	{
-		_mutex->unlock();
-	}
-private:
-	T* _mutex;
-};
-
-void Push()
+void Func2()
 {
-	for (int32 i = 0; i < 10000; ++i)
+	for (int32 i = 0; i < 100; ++i)
 	{
-		// 자물쇠 잠그기
-		//std::lock_guard<std::mutex> lockGuard(m);\
-
-		// 따로 Lock 해줄때까지 대기 시키는 lock 방식
-		std::unique_lock<std::mutex> uniqueLock(m, std::defer_lock);
-		
-		uniqueLock.lock();
-
-		//m.lock();
-
-		v.push_back(i);
-		
-		// 자물쇠 풀기
-		//m.unlock();
+		AccountManager::instance()->ProcessLogin();
 	}
 }
 
 int main()
 {
-	std::thread t1(Push);
-	std::thread t2(Push);
+	std::thread t1(Func1);
+	std::thread t2(Func2);
 
 	t1.join();
 	t2.join();
 
-	cout << v.size() << endl;
+	cout << "Jobs Done" << endl;
 }
