@@ -5,10 +5,11 @@
 void UserManager::ProcessSave()
 {
 	// userLock
-	lock_guard<mutex> guard(_mutex);
+	// 쓰레드 1 (1차 Lock)
+	lock_guard<mutex> guard(_mutex); // 락 걸어라, 그리고 이 함수가 끝나면 락 풀어라
 
 	// accountLock
-	AccountManager::instance()->GetAccount(100);
+	Account* account =  AccountManager::instance()->GetAccount(100);
 
 	// TODO
 }

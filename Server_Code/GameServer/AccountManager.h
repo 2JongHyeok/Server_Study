@@ -17,7 +17,9 @@ public:
 
 	Account* GetAccount(int32 id)
 	{
-		lock_guard<mutex> guard(_mutex);
+		// 쓰레드 1 위치
+		// 쓰레드1 2차 Lock
+		lock_guard<mutex> guard(_mutex); // 락 걸고 리턴하면 풀어라
 		// 뭔가를 갖고옴
 		return nullptr;
 	}

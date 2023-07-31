@@ -5,6 +5,7 @@
 void AccountManager::ProcessLogin()
 {
 	// accountLock
+	// 쓰레드 2 (1차 Lock)
 	lock_guard<mutex> guard(_mutex);
 
 	// userLock

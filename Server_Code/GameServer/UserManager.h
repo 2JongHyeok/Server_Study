@@ -17,6 +17,7 @@ public:
 
 	User* GetUser(int32 id)
 	{
+		// 쓰레드 2 (2차 Lock)
 		lock_guard<mutex> guard(_mutex);
 		// 뭔가 갖고 옴
 		return nullptr;
