@@ -10,6 +10,26 @@ class SpinLock
 public:
 	void lock()
 	{
+		// CAS ( Compare-And-Swap )
+		
+		bool expected = false;
+		bool desired = true;
+
+		// CAS 의사코드
+		if (_locked == expected)
+		{
+			expected = _locked;
+			_locked = desired;
+			return true;
+		}
+		else
+		{
+			expected = _locked;
+			return false;	
+		}
+
+		_locked.compare_exchange_strong(expected, desired);
+
 		while (_locked)
 		{
 
@@ -21,7 +41,7 @@ public:
 		_locked = false;
 	}
 private:
-	volatile bool _locked = false;
+	atomic<bool> _locked = false;
 };
 
 int32 sum = 0;
