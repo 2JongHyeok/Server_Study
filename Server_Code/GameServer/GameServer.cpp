@@ -16,7 +16,7 @@ public:
 		bool desired = true;
 
 		// CAS 의사코드
-		if (_locked == expected)
+		/*if (_locked == expected)
 		{
 			expected = _locked;
 			_locked = desired;
@@ -26,19 +26,19 @@ public:
 		{
 			expected = _locked;
 			return false;	
-		}
+		}*/
 
-		_locked.compare_exchange_strong(expected, desired);
+		
 
-		while (_locked)
+		while (_locked.compare_exchange_strong(expected, desired) == false)
 		{
-
+			expected = false;
 		}
-		_locked = true;
 	}
 	void unlock()
 	{
-		_locked = false;
+		//_locked = false;
+		_locked.store(false);
 	}
 private:
 	atomic<bool> _locked = false;
