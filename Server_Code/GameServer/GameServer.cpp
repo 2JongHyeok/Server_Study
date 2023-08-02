@@ -4,60 +4,57 @@
 #include <thread>
 #include <atomic>
 #include <mutex>
+#include <Windows.h>
 
-class SpinLock
-{
-public:
-	void lock()
-	{
-		// CAS ( Compare-And-Swap )
-		bool expected = false;
-		bool desired = true;
-
-		while (_locked.compare_exchange_strong(expected, desired) == false)
-		{
-			expected = false;
-
-			this_thread::sleep_for(100ms);
-		}
-	}
-	void unlock()
-	{
-		_locked.store(false);
-	}
-private:
-	atomic<bool> _locked = false;
-};
-
-int32 sum = 0;
 mutex m;
-SpinLock spinLock;
+queue<int32> q;
+HANDLE handle;
 
-void Add()
+void Producer()
 {
-	for (int32 i = 0; i < 100'000; ++i)
+	while (true)
 	{
-		lock_guard<SpinLock> guard(spinLock);
-		sum++;
+		{
+			unique_lock<mutex> lock(m);
+			q.push(100);
+		}
+
+		::SetEvent(handle);
+		this_thread::sleep_for(10000ms);
 	}
 }
 
-void Sub()
+void Consumer()
 {
-	for (int32 i = 0; i < 100'000; ++i)
+	while (true)
 	{
-		lock_guard<SpinLock> guard(spinLock);
-		sum--;
+		::WaitForSingleObject(handle, INFINITE);
+		//::ResetEvent(handle); (만약 CreateEvent의 두번째 인자를 True로 바꾸면 이 코드로 직접 바꿔줘야함)
+		// Non-Signal
+
+		unique_lock<mutex> lock(m);
+		if (q.empty() == false)
+		{
+			int32 data = q.front();
+			q.pop();
+			cout << data << endl;
+		}
 	}
 }
 
 int main()
 {
-	thread t1(Add);
-	thread t2(Sub);
+	// 커널 오브젝트
+	// Usage Count
+	// Signal ( 파란불 ) / Non-Signal (빨간불) << bool
+	// Auto / Manual << bool
+	handle = ::CreateEvent(NULL/*보안속성*/, FALSE/*bManualReset*/, FALSE/*bInitialState*/, NULL);
+	
+	thread t1(Producer);
+	thread t2(Consumer);
 
 	t1.join();
 	t2.join();
 
-	cout << sum << endl;
+	::CloseHandle(handle);
 }
