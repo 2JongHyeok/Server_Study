@@ -4,63 +4,41 @@
 #include <thread>
 #include <atomic>
 #include <mutex>
-#include <Windows.h>
+#include <future>
 
-mutex m;
-queue<int32> q;
-
-// 참고) CV는 User-Level Object ( 커널 오브젝트 x )
-condition_variable cv;
-
-void Producer()
+int64 Calculate()
 {
-	while (true)
-	{
-		// 1) Lock을 잡고
-		// 2) 공유 변수 값을 수정
-		// 3) Lock을 풀고
-		// 4) 조건변수 통해 다른 쓰레드에게 통지
+	int64 sum = 0;
 
-		{
-			unique_lock<mutex> lock(m);
-			q.push(100);
-		}
+	for (int32 i = 0; i < 100'000; ++i)
+		sum += i;
 
-		cv.notify_one();	// wait중인 쓰레드가 있으면 딱 1개를 깨운다.
-
-		//this_thread::sleep_for(10000ms);
-	}
-}
-
-void Consumer()
-{
-	while (true)
-	{
-		unique_lock<mutex> lock(m);
-		cv.wait(lock, []() {return q.empty() == false; });
-		// 1) Lock을 잡고
-		// 2) 조건 확인
-		// - 만족 O => 빠져나와서 이어서 코드를 진행
-		// - 만족 X => Lock을 풀어주고 대기 상태
-		
-		// 그런데 notify_one을 했으면 항상 조건식을 만족하는거 아닐까?
-		// Spurious Wakeup (가짜 기상?)
-		// notify_one할때 Lock을 잡고 있는 것이 아니기 때문.
-
-		//while (q.empty() == false)
-		{
-			int32 data = q.front();
-			q.pop();
-			cout << q.size() << endl;
-		}
-	}
+	return sum;
 }
 
 int main()
 {
-	thread t1(Producer);
-	thread t2(Consumer);
+	// 동기(synchronous) 실행
+	//int64 sum = Calculate();
+	//cout << sum << endl;
 
-	t1.join();
-	t2.join();
+	// std::future
+	{
+		// 1) deferred -> lazy evaluation 지연해서 실행하세요
+		// 2) async -> 별도의 쓰레드를 만들어서 실행하세요
+		// 3) deferred | async -> 둘 중 알아서 골라주세요
+		std::future<int64> future = std::async(std::launch::deferred, Calculate);
+		
+		// TODO
+		
+		int64 sum = future.get();	// 결과물이 이제서야 필요하다!
+		
+		class Knight
+		{
+		public:
+			int64 GetHp() { return 100; }
+		};
+		Knight knight;
+		std::future<int64> future2 = std::async(std::launch::async, &Knight::GetHp, knight);	// knight.GetHp()
+	}
 }
