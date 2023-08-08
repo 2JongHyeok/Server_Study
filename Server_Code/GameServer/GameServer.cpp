@@ -21,6 +21,11 @@ void PromiseWorker(std::promise<string>&& promise)
 	promise.set_value("Secret Message");
 }
 
+void TaskWorker(std::packaged_task<int64(void)>&& task)
+{
+	task();
+}
+
 int main()
 {
 	// 동기(synchronous) 실행
@@ -53,5 +58,18 @@ int main()
 		cout << message << endl;
 		t.join();
 
+	}
+
+	// std::packaged_task
+	{
+		std::packaged_task<int64(void)> task(Calculate);
+		std::future<int64> future = task.get_future();
+
+		std::thread t(TaskWorker, std::move(task));
+
+		int64 sum = future.get();
+		cout << sum << endl;
+
+		t.join();
 	}
 }
