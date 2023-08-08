@@ -16,6 +16,11 @@ int64 Calculate()
 	return sum;
 }
 
+void PromiseWorker(std::promise<string>&& promise)
+{
+	promise.set_value("Secret Message");
+}
+
 int main()
 {
 	// 동기(synchronous) 실행
@@ -27,18 +32,26 @@ int main()
 		// 1) deferred -> lazy evaluation 지연해서 실행하세요
 		// 2) async -> 별도의 쓰레드를 만들어서 실행하세요
 		// 3) deferred | async -> 둘 중 알아서 골라주세요
+
+		// 언젠가 미래에 결과물을 뱉어줄거야!
 		std::future<int64> future = std::async(std::launch::deferred, Calculate);
 		
 		// TODO
 		
 		int64 sum = future.get();	// 결과물이 이제서야 필요하다!
-		
-		class Knight
-		{
-		public:
-			int64 GetHp() { return 100; }
-		};
-		Knight knight;
-		std::future<int64> future2 = std::async(std::launch::async, &Knight::GetHp, knight);	// knight.GetHp()
+	}
+
+	// std::promise
+	{
+		// 미래(std::future)에 결과물을 반환해줄꺼라 약속(std::promise) 해줘~ (계약서?)
+		std::promise<string> promise;
+		std::future<string> future = promise.get_future();
+
+		thread t(PromiseWorker, std::move(promise));
+
+		string message = future.get();
+		cout << message << endl;
+		t.join();
+
 	}
 }
