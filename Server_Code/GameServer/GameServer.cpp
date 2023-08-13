@@ -14,14 +14,14 @@ void Producer()
 {
 	value = 10;
 
-	ready.store(true, memory_order::memory_order_release);
+	ready.store(true);
 	// --------------- 절취선 ------------------
 }
 
 void Consumer()
 {
 	// --------------- 절취선 ------------------
-	while (ready.load(memory_order::memory_order_acquire) == false)
+	while (ready.load() == false)
 		;
 
 	cout << value << endl;
@@ -50,4 +50,8 @@ int main()
 	// 너무나도 자유롭다!
 	// 코드 재배치도 멋대로 가능! 가시성 해결 NO!
 	// 가장 기본 조건 (동일 객체에 대한 동일 관전 순서만 보장)
+
+	// 인텔, AMD의 경우 애당초 순차적 일관성을 보장을 해서,
+	// seq_cst를 써도 별다른 부하가 없음
+	// AMD의 경우 꽤 차이가 있다!
 }
