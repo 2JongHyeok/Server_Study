@@ -7,30 +7,38 @@
 #include <Windows.h>
 #include <future>
 
-//__declspec(thread) int32 value;
-thread_local int32 LThreadId = 0;
+queue<int32> q;
+stack<int32> s;
 
-void ThreadMain(int32 threadid)
+void Push()
 {
-	LThreadId = threadid;
-
 	while (true)
 	{
-		cout << "Hi! I am Thread " << LThreadId << endl;
-		this_thread::sleep_for(1s);
+		int32 value = rand() % 100;
+		q.push(value);
+
+		this_thread::sleep_for(10ms);
+	}
+}
+
+void Pop()
+{
+	while (true)
+	{
+		if (q.empty())
+			continue;
+
+		int32 data = q.front();
+		q.pop();
+		cout << data << endl;
 	}
 }
 
 int main()
 {
-	vector<thread> threads;
+	thread t1(Push);
+	thread t2(Pop);
 
-	for (int32 i = 0; i < 10; ++i)
-	{
-		int32 threadid = i + 1;
-		threads.push_back(thread(ThreadMain, threadid));
-	}
-
-	for (thread& t : threads)
-		t.join();
+	t1.join();
+	t2.join();
 }
