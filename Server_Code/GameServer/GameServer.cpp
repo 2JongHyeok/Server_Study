@@ -9,35 +9,84 @@
 #include "ConcurrentQueue.h"
 #include "ConcurrentStack.h"
 
-LockQueue<int32> q;
-LockFreeStack<int32> s;
+#include <WinSock2.h>
+#include <MSWSock.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
 
-void Push()
-{
-	while (true)
-	{
-		int32 value = rand() % 100;
-		s.Push(value);
-
-		//this_thread::sleep_for(10ms);
-	}
-}
-
-void Pop()
-{
-	while (true)
-	{
-		int32 data = 0;
-		if (s.TryPop(OUT data))
-			cout << data << endl;
-	}
-}
 
 int main()
 {
-	thread t1(Push);
-	thread t2(Pop);
+   // 윈속 초기화 (ws2_32 라이브러리 초기화)
+   // 관련 정보가 wsaData에 채워짐
+    WSAData wsaData;
+    if (::WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+        return 0;
 
-	t1.join();
-	t2.join();
+   // ad : Address Family (AF_INET = Ipv4, AF_INET6 = IPv6)
+   // type : TCP(SOCK_STREAM) vs UDP(SOCK_DGRAM)
+   // protocol : 0
+   // return : descriptor
+
+    SOCKET listenSocket = ::socket(AF_INET, SOCK_STREAM, 0);
+    if (listenSocket == INVALID_SOCKET)
+    {
+        int32 errCode = ::WSAGetLastError();
+        cout << "Socket ErrorCode : " << errCode << endl;
+        return 0;
+    }
+
+    // 나의 주소는? (IP주소 + Port) -> XX 아파트 YY 호
+    SOCKADDR_IN serverAddr; // Ipv4;
+    ::memset(&serverAddr, 0, sizeof(serverAddr));
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.s_addr = ::htonl(INADDR_ANY); // < 니가 알아서 해줘
+    serverAddr.sin_port = ::htons(7777);    // 80 : HTTP
+
+    // 안내원 폰 개통! 식당의 대표 번호
+    if (::bind(listenSocket, (SOCKADDR*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR)
+    {
+        int32 errCode = ::WSAGetLastError();
+        cout << "Bind ErrorCode : " << errCode << endl;
+        return 0;
+    }
+
+    // 영업 시작!
+    if (::listen(listenSocket, 10) == SOCKET_ERROR)
+    {
+        int32 errCode = ::WSAGetLastError();
+        cout << "Bind ErrorCode : " << errCode << endl;
+        return 0;
+    }
+
+
+    // ----------------------------------------
+
+    while (true)
+    {
+       SOCKADDR_IN clientAddr; // IPv4
+       ::memset(&serverAddr, 0, sizeof(serverAddr));
+       int32 addLen = sizeof(clientAddr);
+
+       SOCKET clientSocket = ::accept(listenSocket, (SOCKADDR*)&clientAddr, &addLen);
+       if (clientSocket == INVALID_SOCKET)
+       {
+           int32 errCode = ::WSAGetLastError();
+           cout << "Bind ErrorCode : " << errCode << endl;
+           return 0;
+       }
+
+       // 손님 입장!
+       char ipAddress[16];
+       ::inet_ntop(AF_INET, &clientAddr.sin_addr, ipAddress, sizeof(ipAddress));
+       cout << "Client Connected! IP = " << ipAddress << endl;
+
+       // TODO
+    }
+    
+    // ----------------------------------------
+
+
+    // 윈속 종료
+    ::WSACleanup();
 }
