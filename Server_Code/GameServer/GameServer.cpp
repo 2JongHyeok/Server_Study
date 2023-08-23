@@ -14,6 +14,12 @@
 #include <ws2tcpip.h>
 #pragma comment(lib, "ws2_32.lib")
 
+void HandleError(const char* cause)
+{
+	int32 errCode = ::WSAGetLastError();
+	cout << cause << "ErrorCode : " << errCode << endl;
+}
+
 
 int main()
 {
@@ -22,87 +28,57 @@ int main()
 	if (::WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
 		return 0;
 
-
-	SOCKET listenSocket = ::socket(AF_INET, SOCK_STREAM, 0);
-	if (listenSocket == INVALID_SOCKET)
+	SOCKET serverSocket = ::socket(AF_INET, SOCK_DGRAM, 0);
+	if (serverSocket == INVALID_SOCKET)
 	{
-		int32 errCode = ::WSAGetLastError();
-		cout << "Socket ErrorCode : " << errCode << endl;
+		HandleError("Socket");
 		return 0;
 	}
 
 	SOCKADDR_IN serverAddr; // Ipv4;
 	::memset(&serverAddr, 0, sizeof(serverAddr));
 	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_addr.s_addr = ::htonl(INADDR_ANY); // < 니가 알아서 해줘
+	serverAddr.sin_addr.s_addr = ::htonl(INADDR_ANY);
 	serverAddr.sin_port = ::htons(7777);    // 80 : HTTP
 
-	if (::bind(listenSocket, (SOCKADDR*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR)
+	if (::bind(serverSocket, (SOCKADDR*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR)
 	{
-		int32 errCode = ::WSAGetLastError();
-		cout << "Bind ErrorCode : " << errCode << endl;
+		HandleError("Bind");
 		return 0;
 	}
-
-	if (::listen(listenSocket, 10) == SOCKET_ERROR)
-	{
-		int32 errCode = ::WSAGetLastError();
-		cout << "Bind ErrorCode : " << errCode << endl;
-		return 0;
-	}
-
-
-	// ----------------------------------------
 
 	while (true)
 	{
-	   SOCKADDR_IN clientAddr; // IPv4
-	   ::memset(&serverAddr, 0, sizeof(serverAddr));
-	   int32 addLen = sizeof(clientAddr);
+		SOCKADDR_IN clientAddr;
+		::memset(&clientAddr, 0, sizeof(clientAddr));
+		int32 addrLen = sizeof(clientAddr);
 
-	   SOCKET clientSocket = ::accept(listenSocket, (SOCKADDR*)&clientAddr, &addLen);
-	   if (clientSocket == INVALID_SOCKET)
-	   {
-		   int32 errCode = ::WSAGetLastError();
-		   cout << "Bind ErrorCode : " << errCode << endl;
-		   return 0;
-	   }
+		this_thread::sleep_for(1s);
 
-	   // 손님 입장!
-	   char ipAddress[16];
-	   ::inet_ntop(AF_INET, &clientAddr.sin_addr, ipAddress, sizeof(ipAddress));
-	   cout << "Client Connected! IP = " << ipAddress << endl;
+		char recvBuffer[1000];
 
-	   // TODO
-	   while (true)
-	   {
-		   char recvBuffer[1000];
+		int32 recvLen = ::recvfrom(serverSocket, recvBuffer, sizeof(recvBuffer), 0, 
+			(SOCKADDR*)&clientAddr, &addrLen);
 
-		   this_thread::sleep_for(1s);
-		   
-		   int32 recvLen = ::recv(clientSocket, recvBuffer, sizeof(recvBuffer), 0);
-		   if (recvLen <= 0)
-		   {
-			   int32 errCode = ::WSAGetLastError();
-			   cout << "Bind ErrorCode : " << errCode << endl;
-			   return 0;
-		   }
+		if (recvLen <= 0)
+		{
+			HandleError("RecvFrom");
+			return 0;
+		}
 
-		   cout << "Recv Data! Data = " << recvBuffer << endl;
-		   cout << "Recv Len! Data = " << recvLen << endl;
+		cout << "Recv Data! Data = " << recvBuffer << endl;
+		cout << "Recv Len! Data = " << recvLen << endl;
 
-		  /* int32 resultCode = ::send(clientSocket, recvBuffer, sizeof(recvBuffer), 0);
-		   if (resultCode == SOCKET_ERROR)
-		   {
-			   int32 errCode = ::WSAGetLastError();
-			   cout << "Connect ErrorCode : " << errCode << endl;
-			   return 0;
-		   }*/
-	   }
+		int32 errorCode = ::sendto(serverSocket, recvBuffer, recvLen, 0,
+			(SOCKADDR*)&clientAddr, sizeof(clientAddr));
+		if (errorCode == SOCKET_ERROR)
+		{
+			HandleError("SendTo");
+			return 0;
+		}
+
+		cout << "Send Data! Len = " << recvLen << endl;
 	}
-	
-	// ----------------------------------------
-
 
 	// 윈속 종료
 	::WSACleanup();
