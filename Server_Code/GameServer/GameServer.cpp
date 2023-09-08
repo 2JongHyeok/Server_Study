@@ -18,13 +18,16 @@ public:
 	int _posY = 0;
 };
 
+using WraightRef = TSharedPtr<Wraight>;
+
 class Missile : public RefCountable
 {
 public:
-	void SetTarget(Wraight* target)
+	void SetTarget(WraightRef target)
 	{
 		_target = target;
-		target->AddRef();
+		// 중간에 개입 가능
+		//target->AddRef();
 
 	}
 
@@ -39,7 +42,7 @@ public:
 		// TODO : 쫒아간다
 		if (_target->_hp == 0)
 		{
-			_target->ReleaseRef();
+			//_target->ReleaseRef();
 			_target = nullptr;
 			return true;
 		}
@@ -47,33 +50,40 @@ public:
 		return false;
 	}
 
-	Wraight* _target = nullptr;
+	WraightRef _target = nullptr;
 
 };
+
+using MissileRef = TSharedPtr<Missile>;
 
 int main()
 {
 	
-	Wraight* wraight = new Wraight();
-	Missile* missile = new Missile();
+	WraightRef wraight( new Wraight());
+	wraight->ReleaseRef();
+	MissileRef missile( new Missile());	
+	missile->ReleaseRef();
+
 	missile->SetTarget(wraight);
 
 	// 레이스가 피격당함
 	wraight->_hp = 0;
 	//delete wraight;
-	wraight->ReleaseRef();
+	//wraight->ReleaseRef();
 	wraight = nullptr;
 
 	while (true)
 	{
-		if (missile->Update())
-		{
-			missile->ReleaseRef();
-			missile = nullptr;
+		if (missile) {
+			if (missile->Update())
+			{
+				//missile->ReleaseRef();
+				missile = nullptr;
+			}
 		}
 	}
 
 	//delete missile;
-	missile->ReleaseRef();
+	//missile->ReleaseRef();
 	missile = nullptr;
 }
