@@ -9,6 +9,7 @@
 #include "ThreadManager.h"
 
 #include "RefCounting.h"
+#include "Memory.h"
 
 
 class Knight 
@@ -19,37 +20,63 @@ public:
 		cout << "Knight()" << endl;
 	}
 
+	Knight(int32 hp) : _hp(hp)
+	{
+		cout << "Knight(hp)" << endl;
+	}
+
 	~Knight()
 	{
 		cout << "~Knight()" << endl;
 	}
 
+	/*static void* operator new(size_t size)
+	{
+		cout << "Knight new! " << size << endl;
+		void* ptr = ::malloc(size);
+		return ptr;
+	}
+
+	static void operator delete(void* ptr)
+	{
+		cout << "Knight delete! " << endl;
+		::free(ptr);
+	}*/
+
+	int32 _hp = 100;
+	int32 _mp = 10;
 };
+
+// new operator overloading (Global)
+void* operator new(size_t size)
+{
+	cout << "new! " << size << endl;
+	void* ptr = ::malloc(size);
+	return ptr;
+}
+
+void operator delete(void* ptr)
+{
+	cout << "delete! " << endl;
+	::free(ptr);
+}
+
+void* operator new[](size_t size)
+{
+	cout << "new[]! " << size << endl;
+	void* ptr = ::malloc(size);
+	return ptr;
+}
+
+void operator delete[](void* ptr)
+{
+	cout << "delete[]! " << endl;
+	::free(ptr);
+}
 
 int main()
 {
-	// 1) 이미 만들어진 클래스 대상으로 사용 불가
-	// 2) 순환 ( Cycle ) 문제
+	Knight* knight = xnew<Knight>(100);
 
-	// shared_ptr
-	// weak_ptr
-
-	// [Knight | RefCountingBlock(uses, weak)]
-
-	//[T*][RefCountBlock*]
-
-	// RefCountBlock(useCount(shared), weakCount)
-	shared_ptr<Knight> spr = make_shared<Knight>();
-	weak_ptr<Knight> wpr = spr;
-
-	// 둘중 하나 사용
-	// 1.
-	bool expired = wpr.expired();
-
-	// 2.
-	shared_ptr<Knight> spr2 =  wpr.lock();
-	if (spr2 != nullptr)
-	{
-
-	}
+	xdelete(knight);
 }
